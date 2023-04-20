@@ -285,7 +285,7 @@ module BT
 	wire FG_SC = FG_EXEC && (FG_CNT_INT_PREV != FG_CNT_INT) && CE_F;
 	
 	
-	wire SPR_SEL = LA[31:23] == {8'hA8,1'b0};
+	wire SPR_SEL = LA[31:24] == 8'hA8;
 	bit  [31: 0] SPR_Q;
 	bit  [15: 0] SPR_SQ;
 	bit          SPR_RDY;
@@ -324,7 +324,7 @@ module BT
 			FG_POS <= 0;
 		end else begin
 			RAS_N_OLD <= RAS_N;
-			if (LA[31:22] == {8'hAC,2'b00} && !RAS_N && RAS_N_OLD) begin
+			if (LA[31:24] == 8'hAC && !RAS_N && RAS_N_OLD) begin
 				FG_POS <= LA[13:5];
 			end
 			
@@ -337,11 +337,11 @@ module BT
 	wire FG_SE = |SPR_COLOR & ~FG_POS[8];
 	wire [7:0] FG_SD = {~SPR_CONTROL[15:12],SPR_COLOR & ~{4{MISC_CONTROL[4]}}};
 	
-	wire FG_DISP_SEL = LA[31:22] == {8'hA0,2'b00};
+	wire FG_DISP_SEL = LA[31:24] == 8'hA0;
 	wire FG_DISP_SC = SC;
 	wire FG_DISP_SE_N = 1'b0;
 	
-	wire FG_DRAW_SEL = LA[31:22] == {8'hA4,2'b00} || LA[31:22] == {8'hAC,2'b00};
+	wire FG_DRAW_SEL = LA[31:24] == 8'hA4 || LA[31:24] == 8'hAC;
 	wire FG_DRAW_SC = FG_SC;
 	wire FG_DRAW_SE_N = FG_DRAW_SEL && !RAS_N ? LA[27] : FG_EXEC ? ~FG_SE : 1'b0;
 	
