@@ -254,15 +254,51 @@ module hq2x_buf #(parameter NUMWORDS, parameter AWIDTH, parameter DWIDTH)
 	input      [AWIDTH:0] rdaddress,
 	input      [AWIDTH:0] wraddress,
 	input                 wren,
-	output reg [DWIDTH:0] q
+	output     [DWIDTH:0] q
 );
 
-reg [DWIDTH:0] ram[0:NUMWORDS-1];
+// A depth just above a power of two (520, 1040) forces the narrow 2Kx5 M10K
+// mode. Keep the power-of-two part in M10K and the few remaining words in
+// MLABs; every word, the read latency and old-data reads are unchanged.
+localparam MAIN = 1 << ($clog2(NUMWORDS+1)-1);
+localparam TAIL = NUMWORDS - MAIN;
+localparam MBITS = $clog2(MAIN);
 
-always_ff@(posedge clock) begin
-	if(wren) ram[wraddress] <= data;
-	q <= ram[rdaddress];
-end
+generate if (TAIL == 0) begin : single
+	reg [DWIDTH:0] ram[0:NUMWORDS-1];
+	reg [DWIDTH:0] q_r;
+	always_ff@(posedge clock) begin
+		if(wren) ram[wraddress] <= data;
+		q_r <= ram[rdaddress];
+	end
+	assign q = q_r;
+end else begin : split
+	reg [DWIDTH:0] ram[0:MAIN-1];
+	(* ramstyle = "MLAB" *) reg [DWIDTH:0] tail[0:TAIL-1];
+	reg [DWIDTH:0] q_main, q_tail;
+	reg            q_sel;
+	reg            tail_we=0;
+	reg [AWIDTH:0] tail_wa;
+	reg [DWIDTH:0] tail_data;
+	wire           wr_tail = wraddress >= MAIN;
+	wire           rd_tail = rdaddress >= MAIN;
+	wire [AWIDTH:0] tail_ra = rdaddress - MAIN;
+	always_ff@(posedge clock) begin
+		if(wren && !wr_tail) ram[wraddress[MBITS-1:0]] <= data;
+		q_main <= ram[rdaddress[MBITS-1:0]];
+	end
+	always_ff@(posedge clock) begin
+		// MLAB collisions return new data. Commit the previous cycle's write
+		// and forward it to reads, so current writes leave old-data reads intact.
+		if(tail_we) tail[tail_wa] <= tail_data;
+		q_tail <= tail_we && tail_wa == tail_ra ? tail_data : tail[tail_ra];
+		tail_we <= wren && wr_tail;
+		tail_wa <= wraddress - MAIN;
+		tail_data <= data;
+		q_sel  <= rd_tail;
+	end
+	assign q = q_sel ? q_tail : q_main;
+end endgenerate
 
 endmodule
 

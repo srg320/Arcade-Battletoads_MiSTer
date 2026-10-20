@@ -13,18 +13,31 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 
-set_global_assignment -name LAST_QUARTUS_VERSION "17.1.1 Standard Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.0.2 Lite Edition"
 
 set_global_assignment -name GENERATE_RBF_FILE ON
+set_global_assignment -name COMPRESSION_MODE ON
+set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION ON
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+
+# Preserve all video storage; distribute shallow scaler FIFOs and filter stores.
+# Each 32x128 FIFO otherwise occupies four M10Ks for only 4096 useful bits.
+set_instance_assignment -name RAMSTYLE_ATTRIBUTE MLAB -to "*|i_dpram*"
+set_instance_assignment -name RAMSTYLE_ATTRIBUTE MLAB -to "*|o_dpram*"
+set_instance_assignment -name RAMSTYLE_ATTRIBUTE MLAB -to "*|pal1_mem*"
+# Short video pipelines are cheaper as registers than as entire RAM blocks.
+set_global_assignment -name AUTO_SHIFT_REGISTER_RECOGNITION OFF
+# Scaler line stores use scalar words and HDL MLAB attributes in sys/ascal.vhd.
+# Quartus 17 discards RAM placement attributes on the original record arrays.
 set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP "-40"
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS OFF
+set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
+set_global_assignment -name OPTIMIZE_HOLD_TIMING ALL_PATHS
 set_global_assignment -name OPTIMIZE_POWER_DURING_FITTING OFF
 set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION ALWAYS
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
@@ -35,12 +48,13 @@ set_global_assignment -name ROUTER_LCELL_INSERTION_AND_LOGIC_DUPLICATION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
 set_global_assignment -name MUX_RESTRUCTURE ON
 set_global_assignment -name REMOVE_REDUNDANT_LOGIC_CELLS ON
 set_global_assignment -name AUTO_DELAY_CHAINS_FOR_HIGH_FANOUT_INPUT_PINS ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
+set_global_assignment -name AUTO_RESOURCE_SHARING OFF
 set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP ON
 set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
 set_global_assignment -name PRE_MAPPING_RESYNTHESIS ON
@@ -51,13 +65,21 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
 set_global_assignment -name ALM_REGISTER_PACKING_EFFORT LOW
 set_global_assignment -name OPTIMIZE_POWER_DURING_SYNTHESIS OFF
 set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
-set_global_assignment -name SEED 1
+set_global_assignment -name SEED 22
+# Fitter effort for a design that is within ~1 ns of closure at 160 MHz; these are
+# standard Quartus effort controls, not seed or constraint changes.
+set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
+set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
 
 set_global_assignment -name VERILOG_MACRO "SOUND_EN=1"
+set_global_assignment -name VERILOG_MACRO "MISTER_FB=1"
 #set_global_assignment -name VERILOG_MACRO "DEBUG=1"
 
 #use only 1MB per frame for scaler to free more DDR3 RAM
 set_global_assignment -name VERILOG_MACRO "MISTER_SMALL_VBUF=1"
+# Free logic/routing room (timing closure): no ALSA audio, no Y/C analog output.
+set_global_assignment -name VERILOG_MACRO "MISTER_DISABLE_ALSA=1"
+set_global_assignment -name VERILOG_MACRO "MISTER_DISABLE_YC=1"
 
 source sys/sys.tcl
 source sys/sys_analog.tcl
