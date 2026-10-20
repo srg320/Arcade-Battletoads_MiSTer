@@ -68,6 +68,29 @@ module TMS320C1X_RAM (
 
 endmodule 
 
+module BT_BSMT_ROM_SLICE #(parameter integer K = 5, parameter INIT_FILE = "") (
+	input CLK,
+	input [11:0] ADDR,
+	output [K-1:0] Q
+);
+	altsyncram #(
+		.address_aclr_a("NONE"), .clock_enable_input_a("BYPASS"),
+		.clock_enable_output_a("BYPASS"), .init_file(INIT_FILE),
+		.intended_device_family("Cyclone V"), .lpm_hint("ENABLE_RUNTIME_MOD=NO"),
+		.lpm_type("altsyncram"), .numwords_a(4096), .operation_mode("ROM"),
+		.outdata_aclr_a("NONE"), .outdata_reg_a("UNREGISTERED"),
+		.maximum_depth(K == 5 ? 2048 : 0), .ram_block_type("M10K"),
+		.widthad_a(12), .width_a(K), .width_byteena_a(1)
+	) rom (
+		.address_a(ADDR), .clock0(CLK), .q_a(Q), .aclr0(1'b0), .aclr1(1'b0),
+		.address_b(1'b1), .addressstall_a(1'b0), .addressstall_b(1'b0),
+		.byteena_a(1'b1), .byteena_b(1'b1), .clock1(1'b1),
+		.clocken0(1'b1), .clocken1(1'b1), .clocken2(1'b1), .clocken3(1'b1),
+		.data_a({K{1'b1}}), .data_b(1'b1), .eccstatus(), .q_b(),
+		.rden_a(1'b1), .rden_b(1'b1), .wren_a(1'b0), .wren_b(1'b0)
+	);
+endmodule
+
 module TMS320C1X_ROM
 #(
 	parameter rom_file = ""
@@ -93,6 +116,20 @@ module TMS320C1X_ROM
 
 `else
 
+	generate if (rom_file == "rtl/bsmt2000.mif") begin : sliced
+		// The canonical 4Kx16 firmware occupies eight M10Ks as one ROM.
+		// Three 4Kx5 slices and one 4Kx1 slice use seven, with the same
+		// clocked address, unregistered output and immutable ROM contents.
+		genvar part;
+		for (part=0; part<4; part=part+1) begin : limbs
+			localparam integer K = part == 3 ? 1 : 5;
+			localparam INIT_FILE = part == 0 ? "rtl/bsmt2000_slice0.mif" :
+				part == 1 ? "rtl/bsmt2000_slice1.mif" :
+				part == 2 ? "rtl/bsmt2000_slice2.mif" : "rtl/bsmt2000_slice3.mif";
+			BT_BSMT_ROM_SLICE #(.K(K), .INIT_FILE(INIT_FILE)) rom (
+				.CLK(CLK), .ADDR(ADDR), .Q(Q[part*5 +: K]));
+		end
+	end else begin : whole
 	wire [15:0] sub_wire0;
 		
 	altsyncram	altsyncram_component (
@@ -137,6 +174,7 @@ module TMS320C1X_ROM
 
 		
 	assign Q = sub_wire0;
+	end endgenerate
 	
 `endif
 

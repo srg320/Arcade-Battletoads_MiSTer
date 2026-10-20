@@ -1,16 +1,45 @@
-set_global_assignment -name QIP_FILE ../TMS34020/TMS34020.qip
+# sys/sys.tcl has already expanded the unchanged platform QIP natively.
+# Replace exactly its MCP23009 source; preserve every other platform assignment.
+set bt_qip_root [file normalize [file dirname [info script]]]
+set bt_upstream_mcp [file join $bt_qip_root sys mcp23009.sv]
+set bt_removed_mcp 0
+foreach_in_collection bt_assignment [get_all_assignments -type global -name SYSTEMVERILOG_FILE] {
+    set bt_source_value [get_assignment_info -value $bt_assignment]
+    if {[file normalize $bt_source_value] eq $bt_upstream_mcp} {
+        set_global_assignment -remove -name SYSTEMVERILOG_FILE $bt_source_value
+        incr bt_removed_mcp
+    }
+}
+if {$bt_removed_mcp != 1} {error {Expected exactly one native platform MCP23009 source assignment}}
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $bt_qip_root rtl bt_mcp23009.sv]
+unset bt_qip_root bt_upstream_mcp bt_removed_mcp bt_assignment bt_source_value
+
+set_global_assignment -name QIP_FILE rtl/TMS34020/TMS34020.qip
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/TMS34020_mem.sv
-set_global_assignment -name QIP_FILE ../TMS320C1X/TMS320C1X.qip
+set_global_assignment -name QIP_FILE rtl/TMS320C1X/TMS320C1X.qip
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/TMS320C1X_mem.sv
 set_global_assignment -name QIP_FILE rtl/T80/T80.qip
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/BT_mem.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/bg_vram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/fg_vram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/spr_vram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sprite_blitter.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/BT.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_rom_loader.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_clock_enables.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_pause_bridge.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_nvram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_audio_ram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_fg_ddr_clear.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_video_ddr.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_video_mixer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/crt_adjust.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_crt_adjust.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_scandoubler.sv
 set_global_assignment -name VHDL_FILE rtl/bram.vhd
 set_global_assignment -name VHDL_FILE rtl/CEGen.vhd
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sdram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/ddram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/bt_ddr_tag_compare.sv
 set_global_assignment -name SDC_FILE Arcade-Battletoads.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-Battletoads.sv

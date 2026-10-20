@@ -1,0 +1,8 @@
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020_RF.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020_ID.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020_IO.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020_MC.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020_CACHE.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020_pkg.sv ]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) TMS34020.sv ]
+

@@ -51,13 +51,15 @@ module TMS34020_regram (
 endmodule
 
 
-module TMS34020_CACHE_RAM (
+// 72-bit words: the 32-bit instruction long-word plus, for each 16-bit half,
+// its predecoded state-0 register-file addresses (two 10-bit fields).
+module TMS34020_CACHE_RAM #(parameter DATA_WIDTH=72) (
 	input          CLK,
 	input  [ 6: 0] WADDR,
-	input  [31: 0] DATA,
+	input  [DATA_WIDTH-1:0] DATA,
 	input          WREN,
 	input  [ 6: 0] RADDR,
-	output [31: 0] Q
+	output [DATA_WIDTH-1:0] Q
 );
 
 // synopsys translate_off
@@ -66,7 +68,7 @@ module TMS34020_CACHE_RAM (
 	
 `ifdef SIM
 
-	reg [31:0] MEM [128];
+	reg [DATA_WIDTH-1:0] MEM [128];
 		
 	always @(posedge CLK) begin
 		if (WREN) MEM[WADDR] <= DATA;
@@ -76,7 +78,7 @@ module TMS34020_CACHE_RAM (
 
 `else
 
-	wire [31:0] sub_wire0;
+	wire [DATA_WIDTH-1:0] sub_wire0;
 		
 	altdpram	altdpram_component (
 				.data (DATA),
@@ -107,7 +109,7 @@ module TMS34020_CACHE_RAM (
 		altdpram_component.rdcontrol_aclr = "OFF",
 		altdpram_component.rdcontrol_reg = "UNREGISTERED",
 		altdpram_component.read_during_write_mode_mixed_ports = "CONSTRAINED_DONT_CARE",
-		altdpram_component.width = 32,
+		altdpram_component.width = DATA_WIDTH,
 		altdpram_component.widthad = 7,
 		altdpram_component.width_byteena = 1,
 		altdpram_component.wraddress_aclr = "OFF",
@@ -115,7 +117,7 @@ module TMS34020_CACHE_RAM (
 		altdpram_component.wrcontrol_aclr = "OFF",
 		altdpram_component.wrcontrol_reg = "INCLOCK";
 		
-	assign Q = sub_wire0[31:0];
+	assign Q = sub_wire0;
 	
 `endif
 

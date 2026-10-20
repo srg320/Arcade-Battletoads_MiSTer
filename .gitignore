@@ -1,4 +1,7 @@
 db
+build/
+roms/
+mister.env
 greybox_tmp
 incremental_db
 output_files
